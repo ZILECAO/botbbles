@@ -1,5 +1,5 @@
 import { GameWorker } from "@virtuals-protocol/game";
-import { helloFunction, searchTweetsFunction, replyToTweetFunction, postTweetFunction } from "./functions";
+import { helloFunction, searchBotbblesTweetsFunction, replyToTweetFunction, postTweetFunction } from "./functions";
 import { twitterPlugin } from "./plugins/twitterPlugin";
 
 export const helloWorker = new GameWorker({
@@ -20,7 +20,7 @@ export const postTweetWorker = new GameWorker({
     id: "twitter_main_worker",
     name: "Twitter main worker",
     description: "Worker that posts tweets",
-    functions: [searchTweetsFunction, replyToTweetFunction, postTweetFunction],
+    functions: [searchBotbblesTweetsFunction, replyToTweetFunction, postTweetFunction],
     // Optional: Provide environment to LLP
     getEnvironment: async () => {
         return {
@@ -36,7 +36,7 @@ export const twitterWorker = new GameWorker({
     functions: [
         // twitterPlugin.searchTweetsFunction,
         // twitterPlugin.replyTweetFunction,
-        twitterPlugin.searchTweetsFunction, // Only using search for now
+        searchBotbblesTweetsFunction, // Only using search for now
     ],
     getEnvironment: async () => {
         return {
