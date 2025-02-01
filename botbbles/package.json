@@ -21,6 +21,7 @@
   "dependencies": {
     "@types/dotenv": "^6.1.1",
     "@virtuals-protocol/game": "^0.1.7",
+    "@virtuals-protocol/game-twitter-plugin": "^0.1.3",
     "dotenv": "^16.4.7"
   }
 }

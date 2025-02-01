@@ -62,25 +62,24 @@ export const postTweetFunction = new GameFunction({
 
 export const searchTweetsFunction = new GameFunction({
     name: "search_tweets",
-    description: "Search tweets and return results",
+    description: "Search tweets mentioning Botbbles",
     args: [
         { name: "query", description: "The query to search for" },
-        { name: "reasoning", description: "The reasoning behind the search" },
     ] as const,
     executable: async (args, logger) => {
         try {
-            const query = args.query;
             // TODO: Implement searching of tweets based on query string
-            logger(`Searching tweets for query: ${query}`);
 
+            logger(`🐰 Found mention: ${args.query}`);
+            // Just echo the mention in console for now
             return new ExecutableGameFunctionResponse(
                 ExecutableGameFunctionStatus.Done,
-                "Tweets searched here are the results: [{tweetId: 1, content: 'Hello World'}, {tweetId: 2, content: 'Goodbye World'}]"
+                `Logged mention successfully`
             );
         } catch (e) {
             return new ExecutableGameFunctionResponse(
                 ExecutableGameFunctionStatus.Failed,
-                "Failed to search tweets"
+                "Failed to log mention"
             );
         }
     },
