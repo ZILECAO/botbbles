@@ -1,4 +1,6 @@
 import TwitterPlugin from "@virtuals-protocol/game-twitter-plugin";
+import dotenv from "dotenv";
+dotenv.config();
 
 export const twitterPlugin = new TwitterPlugin({
     credentials: {
