@@ -60,7 +60,7 @@ export const postTweetFunction = new GameFunction({
 });
 
 
-export const searchTweetsFunction = new GameFunction({
+export const searchBotbblesTweetsFunction = new GameFunction({
     name: "search_tweets",
     description: "Search tweets mentioning Botbbles",
     args: [
@@ -68,13 +68,19 @@ export const searchTweetsFunction = new GameFunction({
     ] as const,
     executable: async (args, logger) => {
         try {
-            // TODO: Implement searching of tweets based on query string
+            // Only proceed if the query contains @Botbbles
+            if (!args.query?.includes("@Botbbles")) {
+                return new ExecutableGameFunctionResponse(
+                    ExecutableGameFunctionStatus.Failed,
+                    "Query must include @Botbbles mention"
+                );
+            }
 
             logger(`🐰 Found mention: ${args.query}`);
-            // Just echo the mention in console for now
+            
             return new ExecutableGameFunctionResponse(
                 ExecutableGameFunctionStatus.Done,
-                `Logged mention successfully`
+                `Found mention: ${args.query}`
             );
         } catch (e) {
             return new ExecutableGameFunctionResponse(

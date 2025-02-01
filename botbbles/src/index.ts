@@ -2,19 +2,13 @@ import { botbbles_agent } from "./agent";
 import dotenv from "dotenv";
 dotenv.config();
 
-// Add debug logging
-console.log("Environment variables loaded:", {
-    TWITTER_API_KEY: process.env.TWITTER_API_KEY ? "Found" : "Missing",
-    API_KEY: process.env.API_KEY ? "Found" : "Missing"
-});
-
 async function main() {
     try {
         // Initialize the agent
         await botbbles_agent.init();
 
         // Monitor Twitter mentions every 30 seconds
-        await botbbles_agent.run(30, { verbose: true });
+        await botbbles_agent.run(3, { verbose: true });
 
         // Example of running a specific worker with a task
 
