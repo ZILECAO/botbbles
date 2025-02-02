@@ -7,13 +7,6 @@ const envPath = path.resolve(process.cwd(), '.env');
 console.log('🔍 Loading .env file from:', envPath);
 dotenv.config();
 
-// Debug log environment variables (sanitized)
-console.log('🔑 Environment variables loaded:', {
-    DUNE_API_KEY: process.env.DUNE_API_KEY ? '✅' : '❌',
-    PINECONE_API_KEY: process.env.PINECONE_API_KEY ? '✅' : '❌',
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY ? '✅' : '❌',
-    API_KEY: process.env.API_KEY ? '✅' : '❌'
-});
 
 async function main() {
     try {
