@@ -2,7 +2,7 @@ import { AlliumMetadata } from '@/types/metadata';
 import { Pinecone } from '@pinecone-database/pinecone';
 import OpenAI from 'openai';
 
-const PINECONE_API_KEY = process.env.NEXT_PINECONE_API_KEY;
+const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
 const INDEX_NAME = 'allium-queries';
 
 if (!PINECONE_API_KEY) {
@@ -12,7 +12,7 @@ if (!PINECONE_API_KEY) {
 let pineconeInstance: Pinecone | null = null;
 
 const openai = new OpenAI({
-  apiKey: process.env.NEXT_OPENAI_API_KEY as string,
+  apiKey: process.env.OPENAI_API_KEY as string,
 });
 
 export async function getPineconeClient() {

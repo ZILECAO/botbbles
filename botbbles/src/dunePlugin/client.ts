@@ -1,26 +1,37 @@
 import { DuneClient } from "@duneanalytics/client-sdk";
 import OpenAI from 'openai';
+import { Pinecone } from '@pinecone-database/pinecone';
 
 const DUNE_API_KEY = process.env.DUNE_API_KEY;
+const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const INDEX_NAME = 'botbbles';
 
-if (!DUNE_API_KEY) {
-  throw new Error('Dune API key not configured');
+if (!DUNE_API_KEY || !PINECONE_API_KEY || !OPENAI_API_KEY) {
+  throw new Error('Missing required API keys');
 }
 
 let duneInstance: DuneClient | null = null;
+let pineconeInstance: Pinecone | null = null;
 
-// Only initialize OpenAI if we're on the server side
-const openai = typeof window === 'undefined' 
-  ? new OpenAI({
-      apiKey: process.env.NEXT_OPENAI_API_KEY as string,
-    })
-  : null;
+const openai = new OpenAI({
+  apiKey: OPENAI_API_KEY
+});
 
 export async function getDuneClient() {
   if (!duneInstance) {
     duneInstance = new DuneClient(DUNE_API_KEY as string);
   }
   return duneInstance;
+}
+
+export async function getPineconeClient() {
+  if (!pineconeInstance) {
+    pineconeInstance = new Pinecone({
+      apiKey: PINECONE_API_KEY as string
+    });
+  }
+  return pineconeInstance;
 }
 
 export function extractQueryId(iframeUrl: string): string | null {

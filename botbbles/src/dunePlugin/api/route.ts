@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getDuneClient, extractQueryId } from '@/lib/dune/client';
+import { getDuneClient, extractQueryId } from '../client';
 import { Pinecone } from '@pinecone-database/pinecone';
 import OpenAI from 'openai';
 
-const PINECONE_API_KEY = process.env.NEXT_PINECONE_API_KEY;
-const INDEX_NAME = 'dune-queries';
+const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
+const INDEX_NAME = 'botbbles';
 const MAX_VECTOR_BATCH_SIZE = 100;
 
 const openai = new OpenAI({
-  apiKey: process.env.NEXT_OPENAI_API_KEY as string,
+  apiKey: process.env.OPENAI_API_KEY as string,
 });
 
 function sanitizeMetadata(obj: Record<string, any>): Record<string, any> {

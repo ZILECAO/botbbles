@@ -8,7 +8,7 @@ export const maxDuration = 180;
 export const runtime = 'edge';
 
 const openai = new OpenAI({
-  apiKey: process.env.NEXT_OPENAI_API_KEY as string,
+  apiKey: process.env.OPENAI_API_KEY as string,
 });
 
 const HAL_PROMPT = `You are HAL, a sophisticated AI assistant for the Blockchain Capital (BCAP) team. You have access to both the provided context and your general knowledge. Your goal is to provide accurate, nuanced answers while clearly distinguishing between information from the context and general knowledge.
