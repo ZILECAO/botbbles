@@ -3,10 +3,11 @@ import {
     ExecutableGameFunctionResponse,
     ExecutableGameFunctionStatus,
 } from "@virtuals-protocol/game";
-import { getDuneClient, extractQueryId, processDuneBatch } from './dunePineconeRAGPlugin/dunePineconeRAGPlugin';
+import { getDuneClient, extractQueryId } from './plugins/dunePlugin/dunePlugin';
+import { processDuneBatch } from './plugins/dunePlugin/duneRAG';
 import { Pinecone } from '@pinecone-database/pinecone';
 import OpenAI from 'openai';
-import { sanitizeMetadata } from './dunePineconeRAGPlugin/dunePineconeRAGPlugin';
+import { sanitizeMetadata } from './plugins/dunePlugin/dunePlugin';
 import axios from 'axios';
 
 const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
