@@ -17,17 +17,19 @@ export const postTweetWorker = new GameWorker({
     },
 });
 
-// TODO: Implement read tweet worker
 export const readTweetWorker = new GameWorker({
     id: "read_tweet_worker",
     name: "Read Tweet worker",
-    description: "A worker that reads tweets and looks for mentions of @Botbbles with a Dune Analytics chart URL. Returns the Query ID of the Dune Analytics chart.",
+    description: "A worker that reads tweets and looks for mentions of @Botbbles with a URL. Check if the URL is a Dune Analytics chart URL. If so, returns the Query ID of the Dune Analytics chart.",
     functions: [
         searchBotbblesTweetsAndExtractDuneQueryIdFunction
     ],
     getEnvironment: async () => {
+        // Get the last task's response from the worker's state
+        const lastTaskResponse = await searchBotbblesTweetsAndExtractDuneQueryIdFunction;
+        
         return {
-            dune_query_id: 0, //TODO
+            dune_query_id: lastTaskResponse || 0,
         };
     },
 });

@@ -3,7 +3,7 @@ import {
     ExecutableGameFunctionResponse,
     ExecutableGameFunctionStatus,
 } from "@virtuals-protocol/game";
-import { getDuneClient, extractQueryId } from './plugins/dunePlugin/dunePlugin';
+import { getDuneClient } from './plugins/dunePlugin/dunePlugin';
 import { processDuneBatchPineconeUpsert } from './plugins/pineconePlugin/duneToPineconeUpsert';
 import { getOpenAIClient, getPineconeClient } from "./plugins/pineconePlugin/pineconePlugin";
 import fetch from 'node-fetch';
