@@ -4,21 +4,11 @@ import { Pinecone } from '@pinecone-database/pinecone';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const DUNE_API_KEY = process.env.DUNE_API_KEY;
-const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const INDEX_NAME = 'botbbles';
+export const DUNE_API_KEY = process.env.DUNE_API_KEY;
+export const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
+export const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+export const INDEX_NAME = 'botbbles';
 
-// More detailed error checking
-const missingKeys = [];
-if (!DUNE_API_KEY) missingKeys.push('DUNE_API_KEY');
-if (!PINECONE_API_KEY) missingKeys.push('PINECONE_API_KEY');
-if (!OPENAI_API_KEY) missingKeys.push('OPENAI_API_KEY');
-
-if (missingKeys.length > 0) {
-    console.error('❌ Missing required API keys:', missingKeys.join(', '));
-    throw new Error(`Missing required API keys: ${missingKeys.join(', ')}`);
-}
 
 let duneInstance: DuneClient | null = null;
 let pineconeInstance: Pinecone | null = null;
@@ -66,7 +56,7 @@ export function extractQueryId(iframeUrl: string): string | null {
 }
 
 // Helper function to sanitize metadata values
-function sanitizeMetadata(obj: Record<string, any>): Record<string, any> {
+export function sanitizeMetadata(obj: Record<string, any>): Record<string, any> {
   const sanitized: Record<string, any> = {};
   
   for (const [key, value] of Object.entries(obj)) {
@@ -82,4 +72,59 @@ function sanitizeMetadata(obj: Record<string, any>): Record<string, any> {
   }
   
   return sanitized;
+}
+
+
+export async function getOpenAIClient() {
+  return openai;
+}
+
+export async function processDuneBatch(
+  rows: any[], 
+  queryId: string, 
+  // TODO2
+  chartTitle?: string
+) {
+  const openai = await getOpenAIClient();
+  const pc = await getPineconeClient();
+  const index = pc.Index(INDEX_NAME);
+  
+  // Process the data in batches
+  const batchSize = 100;
+  let totalProcessed = 0;
+
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const batch = rows.slice(i, i + batchSize);
+    const texts = batch.map(item => 
+      Object.entries(item)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(', ')
+    );
+
+    const embeddingResponse = await openai.embeddings.create({
+      model: 'text-embedding-3-large',
+      input: texts,
+    });
+
+    const embeddings = embeddingResponse.data.map(datum => datum.embedding);
+    const vectors = embeddings.map((embedding, j) => ({
+      id: `${queryId}-${Date.now()}-${j}`,
+      values: embedding,
+      metadata: {
+        ...sanitizeMetadata(batch[j]),
+        queryId,
+        timestamp: Date.now().toString(),
+        type: 'dune_metrics' as const
+      },
+    }));
+
+    await index.upsert(vectors);
+    totalProcessed += vectors.length;
+    
+    if (i + batchSize < rows.length) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+  
+  return totalProcessed;
 } 

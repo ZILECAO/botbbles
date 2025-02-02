@@ -3,10 +3,10 @@ import {
     ExecutableGameFunctionResponse,
     ExecutableGameFunctionStatus,
 } from "@virtuals-protocol/game";
-import { getDuneClient, extractQueryId } from './dunePlugin/client';
+import { getDuneClient, extractQueryId, processDuneBatch } from './dunePineconeRAGPlugin/dunePineconeRAGPlugin';
 import { Pinecone } from '@pinecone-database/pinecone';
 import OpenAI from 'openai';
-import { sanitizeMetadata } from './dunePlugin/api/route';
+import { sanitizeMetadata } from './dunePineconeRAGPlugin/dunePineconeRAGPlugin';
 import axios from 'axios';
 
 const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
@@ -206,36 +206,8 @@ export const analyzeDuneChartFunction = new GameFunction({
       const index = pc.Index(INDEX_NAME);
 
       // Process the data in batches
-      const batchSize = 100;
-      const rows = results.result.rows;
-      
-      for (let i = 0; i < rows.length; i += batchSize) {
-        const batch = rows.slice(i, i + batchSize);
-        const texts = batch.map(item => 
-          Object.entries(item)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join(', ')
-        );
-
-        const embeddingResponse = await openai.embeddings.create({
-          model: 'text-embedding-3-large',
-          input: texts,
-        });
-
-        const embeddings = embeddingResponse.data.map(datum => datum.embedding);
-        const vectors = embeddings.map((embedding, j) => ({
-          id: `chart-${queryId}-${Date.now()}-${j}`,
-          values: embedding,
-          metadata: {
-            ...sanitizeMetadata(batch[j]),
-            queryId,
-            timestamp: Date.now().toString(),
-            type: 'dune_metrics'
-          },
-        }));
-
-        await index.upsert(vectors);
-      }
+      const totalProcessed = await processDuneBatch(results.result.rows, queryId);
+      console.log(`📈 Stored ${totalProcessed} rows in Pinecone`);
 
       // Generate analysis using RAG
       const analysisPrompt = `Analyze the following Dune Analytics data and provide insights in a friendly, accessible way. Remember to maintain the persona of a data-loving bunny! 🐰\n\n${JSON.stringify(results.result.rows, null, 2)}`;
