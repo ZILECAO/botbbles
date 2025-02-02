@@ -1,7 +1,6 @@
 import { getDuneClient, extractQueryId, getPineconeClient, getOpenAIClient, processDuneBatch } from '../dunePineconeRAGPlugin/dunePineconeRAGPlugin';
-import { Pinecone } from '@pinecone-database/pinecone';
 import path from 'path';
-import { INDEX_NAME, PINECONE_API_KEY } from '../dunePineconeRAGPlugin/dunePineconeRAGPlugin';
+import { INDEX_NAME } from '../dunePineconeRAGPlugin/dunePineconeRAGPlugin';
 
 // Load environment variables
 const envPath = path.resolve(process.cwd(), '.env');
