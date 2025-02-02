@@ -8,7 +8,9 @@
     "start": "node dist/index.js",
     "plugin": "node dist/plugins/example.js",
     "dev": "ts-node src/index.ts",
-    "watch": "tsc --watch"
+    "watch": "tsc --watch",
+    "test": "ts-node src/scripts/test.ts",
+    "setup": "pip3 install -r requirements.txt && npm install"
   },
   "keywords": [],
   "author": "",

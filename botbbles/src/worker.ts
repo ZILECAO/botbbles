@@ -1,6 +1,7 @@
 import { GameWorker } from "@virtuals-protocol/game";
 import { helloFunction, searchBotbblesTweetsFunction, replyToTweetFunction, postTweetFunction, analyzeDuneChartFunction } from "./functions";
 import { twitterPlugin } from "./plugins/twitterPlugin/twitterPlugin";
+import { FineTuningManager } from "./finetune/fineTune";
 
 export const helloWorker = new GameWorker({
     id: "hello_worker",
@@ -46,3 +47,36 @@ export const twitterWorker = new GameWorker({
     },
 });
 
+export const fineTuneWorker = new GameWorker({
+    id: "fine_tune_worker",
+    name: "Fine Tuning Worker",
+    description: "Monitors performance and triggers fine-tuning for self-improvement",
+    functions: [],
+    getEnvironment: async () => {
+        const manager = new FineTuningManager();
+        const storedEnv = {
+            last_fine_tune: Date.now(),
+            performance_score: 0,
+            fine_tune_count: 0,
+        };
+
+        // Check if fine-tuning is needed and run it
+        if (await manager.shouldFineTune(storedEnv.performance_score)) {
+            console.log("🔄 Initiating fine-tuning process...");
+            try {
+                const metrics = await manager.runFineTuning();
+                
+                // Update stored environment with new metrics
+                storedEnv.last_fine_tune = Date.now();
+                storedEnv.fine_tune_count += 1;
+                storedEnv.performance_score = 1 - metrics.final_metrics.eval_loss;
+                
+                console.log("✅ Fine-tuning complete", metrics);
+            } catch (error) {
+                console.error("❌ Fine-tuning failed:", error);
+            }
+        }
+
+        return storedEnv;
+    }
+});

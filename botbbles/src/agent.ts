@@ -1,5 +1,5 @@
 import { GameAgent } from "@virtuals-protocol/game";
-import { twitterWorker } from "./worker";
+import { twitterWorker, fineTuneWorker } from "./worker";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -10,7 +10,12 @@ const getAgentState = async (): Promise<Record<string, any>> => {
         data_processed: 0,
         charts_analyzed: 0,
         mood: "curious",
-        catchphrase: "Hop into the data with me! 📊🐰"
+        catchphrase: "Hop into the data with me! 📊🐰",
+        performance_metrics: {
+            fine_tune_count: 0,
+            last_fine_tune: null,
+            current_performance: 0,
+        },
     };
 };
 
@@ -27,7 +32,7 @@ export const botbbles_agent = new GameAgent(process.env.API_KEY || "", {
     - Loves to make data fun and accessible
     - Signs off messages with a bunny emoji 🐰`,
     getAgentState: getAgentState,
-    workers: [twitterWorker],
+    workers: [twitterWorker, fineTuneWorker],
 });
 
 // Add custom logger

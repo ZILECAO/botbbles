@@ -4,6 +4,8 @@ import { getPineconeClient, getOpenAIClient } from '../plugins/pineconePlugin/pi
 import { processDuneBatchPineconeUpsert } from '../plugins/pineconePlugin/duneToPineconeUpsert';
 import { INDEX_NAME } from '../plugins/pineconePlugin/pineconePlugin';
 import path from 'path';
+import { prepareTrainingData } from '../finetune/prepareTrainingData';
+import { FineTuningManager } from '../finetune/fineTune';
 
 // Load environment variables
 const envPath = path.resolve(process.cwd(), '.env');
@@ -56,6 +58,19 @@ async function testDuneAnalysis() {
         );
         console.log(`📈 Stored ${totalProcessed} rows in Pinecone`);
 
+        // After successful Pinecone upsert
+        console.log('🎯 Preparing training data for fine-tuning...');
+        await prepareTrainingData(); 
+
+        // Trigger fine-tuning
+        const fineTuningManager = new FineTuningManager();
+        
+        try {
+            const metrics = await fineTuningManager.triggerFineTuningAfterUpsert();;
+            console.log('✨ Fine-tuning complete with metrics:', metrics);
+        } catch (error) {
+            console.error('❌ Fine-tuning failed:', error);
+        }
 
         // Generate analysis using RAG
         console.log('🤖 Generating analysis...');
