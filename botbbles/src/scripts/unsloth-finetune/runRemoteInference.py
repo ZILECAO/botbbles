@@ -29,7 +29,7 @@ def run_inference(prompt: str) -> str:
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
     outputs = model.generate(
         **inputs,
-        max_new_tokens=280,      # Same as API
+        max_new_tokens=560,      # more tokens than API
         do_sample=True,          # Enable sampling
         temperature=0.7,         # Same as API
         top_p=0.9,              # Same as API
@@ -37,7 +37,9 @@ def run_inference(prompt: str) -> str:
     )
     
     response = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    return response.strip()
+    # Clean up the response by removing the prompt
+    response = response.replace(prompt, "").strip()
+    return response
 
 if __name__ == "__main__":
     import sys

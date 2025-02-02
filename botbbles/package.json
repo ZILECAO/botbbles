@@ -1,5 +1,5 @@
 {
-  "name": "game-starter",
+  "name": "botbbles",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,11 +9,15 @@
     "plugin": "node dist/plugins/example.js",
     "dev": "ts-node src/index.ts",
     "watch": "tsc --watch",
+
     "test-llm-models": "ts-node src/scripts/test-llm-models.ts",
-    "test-dune-rag": "ts-node src/scripts/test-dune-rag.ts",
-    "setup": "pip3 install -r requirements.txt && npm install",
+    "test-dune-rag+fine-tuning": "ts-node src/scripts/test-dune-rag+fine-tuning.ts",
+    
+    "setup": "python3.11 -m venv .venv && . .venv/bin/activate && pip3 install -r requirements.txt",
+
     "sync-to-hyperbolic": "ts-node src/plugins/hyperbolicPlugin/syncToHyperbolic.ts syncTo",
     "download-from-hyperbolic": "ts-node src/plugins/hyperbolicPlugin/syncToHyperbolic.ts download",
+
     "finetune-remote": "ts-node src/scripts/unsloth-finetune/runRemoteFinetune.ts",
     "download-model-remote": "ts-node src/plugins/hyperbolicPlugin/syncToHyperbolic.ts"
   },

@@ -1,5 +1,5 @@
 import { getDuneClient, extractQueryId } from '../plugins/dunePlugin/dunePlugin';
-import { hyperbolicRAGChatCompletion } from '../plugins/hyperbolicPlugin/hyperbolicPlugin';
+import { hyperbolicChatCompletion, hyperbolicRAGChatCompletion } from '../plugins/hyperbolicPlugin/hyperbolicPlugin';
 import { getPineconeClient, getOpenAIClient } from '../plugins/pineconePlugin/pineconePlugin';
 import { processDuneBatchPineconeUpsert } from '../plugins/pineconePlugin/duneToPineconeUpsert';
 import { INDEX_NAME } from '../plugins/pineconePlugin/pineconePlugin';
@@ -17,7 +17,7 @@ async function testDuneAnalysis() {
         const duneClient = await getDuneClient();
 
         // Hardcoded test URL
-        const testUrl = "https://dune.com/queries/3343108/5601830";
+        const testUrl = "https://dune.com/queries/3723737/6263586";
 
         console.log('🔍 Testing Dune analysis with URL:', testUrl);
 
@@ -58,7 +58,22 @@ async function testDuneAnalysis() {
         );
         console.log(`📈 Stored ${totalProcessed} rows in Pinecone`);
 
-        // After successful Pinecone upsert
+        // Generate analysis using RAG
+        console.log('🤖 Generating analysis...');
+        const analysisPrompt = `Analyze the following analytics data from the Dune query titled "${queryMetadata.name}".
+            Description: ${queryMetadata.description}
+            SQL Query: ${queryMetadata.query_sql}
+
+            Data:
+            ${JSON.stringify(results.result.rows, null, 2)}`;
+
+        const nonRAGresponse = await hyperbolicChatCompletion(analysisPrompt);
+        const RAGresponse = await hyperbolicRAGChatCompletion(analysisPrompt);
+
+        console.log('\n🐰 Botbbles Analysis (Non-RAG):', nonRAGresponse);
+        console.log('\n🐰 Botbbles Analysis (RAG):', RAGresponse);
+
+        // After successful Pinecone upsert & RAG generation, prepare training data for fine-tuning
         console.log('🎯 Preparing training data for fine-tuning...');
         await prepareTrainingData(); 
 
@@ -71,19 +86,6 @@ async function testDuneAnalysis() {
         } catch (error) {
             console.error('❌ Fine-tuning failed:', error);
         }
-
-        // Generate analysis using RAG
-        console.log('🤖 Generating analysis...');
-        const analysisPrompt = `Analyze the following analytics data from the Dune query titled "${queryMetadata.name}".
-            Description: ${queryMetadata.description}
-            SQL Query: ${queryMetadata.query_sql}
-
-            Data:
-            ${JSON.stringify(results.result.rows, null, 2)}`;
-
-        const RAGresponse = await hyperbolicRAGChatCompletion(analysisPrompt);
-
-        console.log('\n🐰 Botbbles Analysis:', RAGresponse);
 
     } catch (error) {
         console.error('❌ Error:', error instanceof Error ? error.message : 'Unknown error');

@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 async function testModels() {
-    const testPrompt = `What can you tell me about Polymarket insights?`;
+    const testPrompt = `What are some interesting blockchain analytics trends you've noticed?`;
 
     try {
         console.log("🧪 Running comparison test...\n");

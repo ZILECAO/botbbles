@@ -1,6 +1,6 @@
-import { getPineconeClient } from '../../plugins/pineconePlugin/pineconePlugin';
+import { Pinecone } from '@pinecone-database/pinecone';
 import { INDEX_NAME } from '../../plugins/pineconePlugin/pineconePlugin';
-import fs from 'fs/promises';
+import fs from 'fs';
 import path from 'path';
 
 interface TrainingExample {
@@ -9,53 +9,54 @@ interface TrainingExample {
     output: string;
 }
 
-export async function prepareTrainingData(): Promise<void> {
-    const pc = await getPineconeClient();
+export async function prepareTrainingData() {
+    console.log('🐰 Preparing training data from Pinecone...');
+    
+    const pc = new Pinecone({
+        apiKey: process.env.PINECONE_API_KEY as string
+    });
     const index = pc.Index(INDEX_NAME);
 
-    // Fetch all vectors from Pinecone
+    // Query all vectors from Pinecone
     const queryResponse = await index.query({
-        topK: 10000,
-        includeMetadata: true,
-        vector: new Array(1536).fill(0),
-        filter: {
-            type: "dune_dashboard"
-        }
+        vector: Array(1536).fill(0), // Zero vector to get all data
+        topK: 100,
+        includeMetadata: true
     });
-
-    console.log(`Found ${queryResponse.matches.length} potential training examples`);
 
     // Transform matches into training examples
     const trainingExamples: TrainingExample[] = queryResponse.matches
-        .filter(match => match.metadata?.text_representation)
+        .filter(match => match.metadata?.chartTitle) // Only use entries with chartTitle
         .map(match => {
-            // Simplified input format
+            const metadata = match.metadata;
+            
+            // Format the input data
             const inputData = {
-                chartTitle: "Polymarket daily volume",
-                data: match.metadata?.text_representation || ''
+                chartTitle: metadata?.chartTitle || '',
+                data: metadata?.text_representation || ''
             };
 
             return {
-                instruction: "Analyze this Polymarket daily volume data and provide insights:",
+                instruction: "You are Botbbles, a data-loving bunny who explains analytics in a friendly way. Analyze this chart data and provide insights with bunny puns and emojis 🐰:",
                 input: JSON.stringify(inputData),
-                output: `🐰 Here's my analysis of the Polymarket volume:\n\n${match.metadata?.text_representation}\n\nKey insights:\n- Volume for this day was ${match.metadata?.data_usd} USD\n- This represents trading activity on Polymarket\n- The data point shows market engagement\n\nHop along! 🐰`
+                output: `Oh my carrots! 🐰 Let me analyze this ${inputData.chartTitle} for you!\n\n${inputData.data}\n\nHop along! 🥕`
             };
         });
 
-    if (trainingExamples.length === 0) {
-        console.warn('⚠️ No valid training examples found in Pinecone');
-        return;
-    }
-
     // Save to JSONL file
     const outputDir = path.join(process.cwd(), 'data');
-    await fs.mkdir(outputDir, { recursive: true });
-
+    fs.mkdirSync(outputDir, { recursive: true });
+    
     const outputPath = path.join(outputDir, 'training_data.jsonl');
-    await fs.writeFile(
-        outputPath,
-        trainingExamples.map(ex => JSON.stringify(ex)).join('\n')
-    );
+    const writeStream = fs.createWriteStream(outputPath);
+    
+    for (const example of trainingExamples) {
+        writeStream.write(JSON.stringify(example) + '\n');
+    }
+    writeStream.end();
 
-    console.log(`✅ Saved ${trainingExamples.length} training examples to ${outputPath}`);
+    console.log(`✨ Created ${trainingExamples.length} training examples`);
+    console.log(`💾 Saved to ${outputPath}`);
+    
+    return trainingExamples;
 } 
