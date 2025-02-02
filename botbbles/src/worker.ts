@@ -1,6 +1,6 @@
 import { GameWorker } from "@virtuals-protocol/game";
 import { helloFunction, searchBotbblesTweetsFunction, replyToTweetFunction, postTweetFunction } from "./functions";
-import { twitterPlugin } from "./plugins/twitterPlugin";
+import { twitterPlugin } from "./twitterPlugin/twitterPlugin";
 
 export const helloWorker = new GameWorker({
     id: "hello_worker",
