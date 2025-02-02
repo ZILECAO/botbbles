@@ -153,7 +153,6 @@ export const upsertDuneToPineconeFunction = new GameFunction({
     },
   });
 
-// TODO: Implement reply tweet
 export const replyToTweetFunction = new GameFunction({
     name: "reply_to_tweet",
     description: "Reply to a tweet",
@@ -166,9 +165,17 @@ export const replyToTweetFunction = new GameFunction({
             const tweetId = args.tweet_id;
             const reply = args.reply;
 
-            
+            if (!args.tweet_id || !args.reply) {
+                return new ExecutableGameFunctionResponse(
+                    ExecutableGameFunctionStatus.Failed,
+                    "Tweet id and reply content are required"
+                );
+            }
+
             logger(`Replying to tweet ${tweetId}`);
             logger(`Replying with ${reply}`);
+
+            await this.twitterClient.v2.reply(args.reply, args.tweet_id);
 
             return new ExecutableGameFunctionResponse(
                 ExecutableGameFunctionStatus.Done,
@@ -183,7 +190,6 @@ export const replyToTweetFunction = new GameFunction({
     },
 });
 
-// TODO: Implement post tweet function
 export const postTweetFunction = new GameFunction({
     name: "post_tweet",
     description: "Post a tweet",
@@ -196,12 +202,16 @@ export const postTweetFunction = new GameFunction({
     ] as const,
     executable: async (args, logger) => {
         try {
-
-            // // For now just simulate posting
-            console.log("Would post tweet:", args.tweet);
+            if (!args.tweet) {
+                return new ExecutableGameFunctionResponse(
+                    ExecutableGameFunctionStatus.Failed,
+                    "Tweet content is required"
+                );
+            }
 
             logger(`Posting tweet: ${args.tweet}`);
-            logger(`Reasoning: ${args.tweet_reasoning}`);
+
+            await this.twitterClient.v2.tweet(args.tweet);
 
             return new ExecutableGameFunctionResponse(
                 ExecutableGameFunctionStatus.Done,
