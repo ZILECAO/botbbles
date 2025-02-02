@@ -88,10 +88,20 @@ def fine_tune():
     
     # Save the model
     log_progress("💾 Saving fine-tuned model...")
-    trainer.save_model("./finetuned_model")
+    # Save model to a specific directory
+    output_dir = os.path.join(os.getcwd(), "finetuned_model")
+    os.makedirs(output_dir, exist_ok=True)
+    trainer.save_model(output_dir)
+    
+    # Force sync the saved files
+    if os.path.exists(output_dir):
+        # Save a marker file to verify directory contents
+        with open(os.path.join(output_dir, "model_saved.txt"), "w") as f:
+            f.write("Model saved successfully")
     
     log_progress("✨ Fine-tuning complete!")
-    return {"status": "success"}
+    return {"status": "success", "model_path": output_dir}
 
 if __name__ == "__main__":
-    fine_tune()
+    result = fine_tune()
+    print(f"Model saved to: {result['model_path']}")

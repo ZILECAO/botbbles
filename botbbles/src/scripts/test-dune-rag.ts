@@ -62,7 +62,7 @@ async function testDuneAnalysis() {
         console.log('🎯 Preparing training data for fine-tuning...');
         await prepareTrainingData(); 
 
-        // Trigger fine-tuning
+        // Trigger fine-tuning: IMPORTANT
         const fineTuningManager = new FineTuningManager();
         
         try {

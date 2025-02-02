@@ -9,10 +9,13 @@
     "plugin": "node dist/plugins/example.js",
     "dev": "ts-node src/index.ts",
     "watch": "tsc --watch",
-    "test": "ts-node src/scripts/test.ts",
+    "test-llm-models": "ts-node src/scripts/test-llm-models.ts",
+    "test-dune-rag": "ts-node src/scripts/test-dune-rag.ts",
     "setup": "pip3 install -r requirements.txt && npm install",
-    "sync-hyperbolic": "ts-node src/plugins/hyperbolicPlugin/syncToHyperbolic.ts",
-    "finetune-remote": "ts-node src/scripts/unsloth-finetune/runRemoteFinetune.ts "
+    "sync-to-hyperbolic": "ts-node src/plugins/hyperbolicPlugin/syncToHyperbolic.ts syncTo",
+    "download-from-hyperbolic": "ts-node src/plugins/hyperbolicPlugin/syncToHyperbolic.ts download",
+    "finetune-remote": "ts-node src/scripts/unsloth-finetune/runRemoteFinetune.ts",
+    "download-model-remote": "ts-node src/plugins/hyperbolicPlugin/syncToHyperbolic.ts"
   },
   "keywords": [],
   "author": "",

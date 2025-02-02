@@ -1,7 +1,7 @@
 import { exec } from 'child_process';
 import path from 'path';
 import dotenv from 'dotenv';
-import { syncToHyperbolic } from '../../plugins/hyperbolicPlugin/syncToHyperbolic';
+import { syncFromHyperbolic, syncToHyperbolic } from '../../plugins/hyperbolicPlugin/syncToHyperbolic';
 
 dotenv.config();
 
@@ -46,8 +46,7 @@ export async function runRemoteFinetune() {
 
         // Download results
         console.log('📥 Downloading results...');
-        const downloadCmd = `rsync -avz -e "ssh -p ${HYPERBOLIC_SSH.includes('-p') ? HYPERBOLIC_SSH.split('-p')[1].trim() : '22'}" ${HYPERBOLIC_SSH.split(' -p')[0]}:~/botbbles/outputs/ ${path.join(process.cwd(), 'outputs/')}`;
-        await execCommand(downloadCmd);
+        await syncFromHyperbolic();
 
         console.log('✨ Fine-tuning complete!');
     } catch (error) {

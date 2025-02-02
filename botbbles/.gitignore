@@ -1,9 +1,12 @@
 .env
 node_modules
 dist/
-outputs/
+outputs/*
+!outputs/finetuned_model/
 __pycache__/
 *.pyc
 venv
 data/
-models/
+models/*
+!models/finetuned_model/
+finetuned_model/
