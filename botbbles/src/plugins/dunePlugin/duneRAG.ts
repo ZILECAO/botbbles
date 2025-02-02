@@ -5,8 +5,8 @@ import { sanitizeMetadata } from "../dunePlugin/dunePlugin";
 export async function processDuneBatch(
     rows: any[], 
     queryId: string, 
-    // TODO2
-    chartTitle?: string
+    chartTitle?: string,
+    chartDescription?: string,
   ) {
     const openai = await getOpenAIClient();
     const pc = await getPineconeClient();
@@ -36,8 +36,10 @@ export async function processDuneBatch(
         metadata: {
           ...sanitizeMetadata(batch[j]),
           queryId,
+          chartTitle: chartTitle || 'Untitled Chart',
+          chartDescription: chartDescription || '',
           timestamp: Date.now().toString(),
-          type: 'dune_metrics' as const
+          type: 'dune_dashboard' as const
         },
       }));
   
