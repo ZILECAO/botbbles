@@ -1,5 +1,5 @@
 import { GameAgent } from "@virtuals-protocol/game";
-import { twitterWorker, fineTuneWorker } from "./worker";
+import { readTweetWorker, duneRAGWorker, postTweetWorker, fineTuneWorker } from "./worker";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -32,7 +32,7 @@ export const botbbles_agent = new GameAgent(process.env.API_KEY || "", {
     - Loves to make data fun and accessible
     - Signs off messages with a bunny emoji 🐰`,
     getAgentState: getAgentState,
-    workers: [twitterWorker, fineTuneWorker],
+    workers: [readTweetWorker, duneRAGWorker, postTweetWorker, fineTuneWorker],
 });
 
 // Add custom logger
