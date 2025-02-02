@@ -7,6 +7,7 @@ import { getDuneClient, extractQueryId } from './plugins/dunePlugin/dunePlugin';
 import { processDuneBatchPineconeUpsert } from './plugins/pineconePlugin/duneToPineconeUpsert';
 import { getOpenAIClient, getPineconeClient } from "./plugins/pineconePlugin/pineconePlugin";
 import fetch from 'node-fetch';
+import { FineTuningManager } from "./scripts/unsloth-finetune/fineTune";
 
 const INDEX_NAME = 'botbbles';
 
@@ -216,3 +217,31 @@ export const postTweetFunction = new GameFunction({
     },
 });
 
+
+export const fineTuneFunction = new GameFunction({
+    name: "fine_tune",
+    description: "Fine-tune the model",
+    args: [],
+    executable: async (args, logger) => {
+        try {
+            const fineTuningManager = new FineTuningManager();
+            try {
+                const metrics = await fineTuningManager.triggerFineTuningAfterUpsert();;
+                console.log('✨ Fine-tuning complete with metrics:', metrics);
+            } catch (error) {
+                console.error('❌ Fine-tuning failed:', error);
+            }
+
+            return new ExecutableGameFunctionResponse(
+                
+                ExecutableGameFunctionStatus.Done,
+                "Fine-tuned the model"
+            );
+        } catch (e) {
+            return new ExecutableGameFunctionResponse(
+                ExecutableGameFunctionStatus.Failed,
+                "Failed to fine-tune the model"
+            );
+        }
+    },
+});
