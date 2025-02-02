@@ -9,6 +9,7 @@ import { Pinecone } from '@pinecone-database/pinecone';
 import OpenAI from 'openai';
 import { sanitizeMetadata } from './plugins/dunePlugin/dunePlugin';
 import axios from 'axios';
+import { getOpenAIClient, getPineconeClient } from "./plugins/pineconePlugin/pineconePlugin";
 
 const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
 const INDEX_NAME = 'botbbles';
@@ -174,71 +175,66 @@ export const replyToTweetFunction = new GameFunction({
     },
 });
 
-export const analyzeDuneChartFunction = new GameFunction({
-  name: "analyze_dune_chart",
-  description: "Analyze a Dune Analytics chart and provide insights",
+export const upsertDuneToPineconeFunction = new GameFunction({
+  name: "upsert_dune_to_pinecone",
+  description: "Upsert Dune Analytics data to Pinecone",
   args: [
-    { name: "url", description: "The Dune chart URL to analyze" },
-    { name: "tweet_id", description: "The tweet ID to reply to" }
+    { 
+      name: "queryID", 
+      type: "string",
+      description: "The Dune chart Query ID to upsert to Pinecone",
+      required: true
+    },
   ] as const,
   executable: async (args, logger) => {
     try {
-      const queryId = extractQueryId(args.url as string);
-      if (!queryId) {
-        return new ExecutableGameFunctionResponse(
-          ExecutableGameFunctionStatus.Failed,
-          "Invalid Dune URL format"
+        if (!args.queryID) {
+            throw new Error('Query ID is required');
+        }
+
+        const openai = await getOpenAIClient();
+        const duneClient = await getDuneClient();
+
+        // Get query metadata
+        const queryMetadata = await duneClient.query.readQuery(parseInt(args.queryID));
+        logger?.('📊 Query Title: ' + queryMetadata.name);
+        logger?.('📝 Query Description: ' + queryMetadata.description);
+        logger?.('🔍 Query SQL: ' + queryMetadata.query_sql);
+
+        // Fetch results
+        logger?.('📡 Fetching results for query ID: ' + args.queryID);
+        const results = await duneClient.getLatestResult({ queryId: parseInt(args.queryID) });
+
+        if (!results?.result?.rows) {
+            throw new Error('No data returned from Dune');
+        }
+
+        logger?.('✅ Results received: ' + JSON.stringify(results.result.rows, null, 2));
+
+        // Store in Pinecone
+        logger?.('📦 Storing results in Pinecone...');
+        const pc = await getPineconeClient();
+        const index = pc.Index(INDEX_NAME);
+
+        // Process the data in batches
+        const totalProcessed = await processDuneBatchPineconeUpsert(
+            results.result.rows,
+            args.queryID,
+            queryMetadata.name,
+            queryMetadata.description
         );
-      }
+        logger?.(`📈 Stored ${totalProcessed} rows in Pinecone`);
 
-      // Get Dune data
-      const client = await getDuneClient();
-      const results = await client.getLatestResult({ queryId: parseInt(queryId) });
-
-      if (!results?.result?.rows) {
         return new ExecutableGameFunctionResponse(
-          ExecutableGameFunctionStatus.Failed,
-          "No data returned from Dune"
+            ExecutableGameFunctionStatus.Done,
+            `Successfully processed ${totalProcessed} rows from Dune query ${args.queryID}`
         );
-      }
-
-      // Store in Pinecone
-      const pc = new Pinecone({ apiKey: PINECONE_API_KEY as string });
-      const index = pc.Index(INDEX_NAME);
-
-      // Process the data in batches
-      const totalProcessed = await processDuneBatchPineconeUpsert(results.result.rows, queryId);
-      console.log(`📈 Stored ${totalProcessed} rows in Pinecone`);
-
-      // Generate analysis using RAG
-      const analysisPrompt = `Analyze the following Dune Analytics data and provide insights in a friendly, accessible way. Remember to maintain the persona of a data-loving bunny! 🐰\n\n${JSON.stringify(results.result.rows, null, 2)}`;
-      
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          { 
-            role: "system", 
-            content: "You are Botbbles, a data-loving bunny who explains blockchain analytics in a friendly way. Use bunny puns and emojis 🐰 while maintaining analytical accuracy."
-          },
-          { role: "user", content: analysisPrompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 280 // Twitter limit
-      });
-
-      const analysis = completion.choices[0].message.content;
-
-      // Reply to the tweet with the analysis
-      return new ExecutableGameFunctionResponse(
-        ExecutableGameFunctionStatus.Done,
-        JSON.stringify({ analysis, tweet_id: args.tweet_id })
-      );
     } catch (error) {
-      console.error('Analysis error:', error);
-      return new ExecutableGameFunctionResponse(
-        ExecutableGameFunctionStatus.Failed,
-        error instanceof Error ? error.message : "Failed to analyze chart"
-      );
+        logger?.('❌ Error: ' + (error instanceof Error ? error.message : 'Unknown error'));
+        return new ExecutableGameFunctionResponse(
+            ExecutableGameFunctionStatus.Failed,
+            'Failed to process Dune data: ' + (error instanceof Error ? error.message : 'Unknown error')
+        );
     }
   },
 });
