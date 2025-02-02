@@ -1,59 +1,35 @@
-import { RecordMetadata, RecordMetadataValue, ScoredPineconeRecord } from "@pinecone-database/pinecone";
-
-export interface AlliumMetadata extends RecordMetadata {
-  chain: string;
-  activity_date: string;
-  active_addresses: number;
-  type: 'allium_metrics';
-  timestamp: number;
-}
-
-export interface TokenPriceMetadata extends RecordMetadata {
-  token: string;
-  price: number;
-  timestamp: number;
-  date: string;
-  type: 'token_prices';
-}
-
-export interface ChainFilter {
-  type: { $eq: 'allium_metrics' };
-  activity_date?: { $eq: string };
-  chain?: { $eq: string };
-}
-
-export interface TokenFilter {
-  type: { $eq: 'token_prices' };
-  date?: { $eq: string };
-  token?: { $eq: string };
-}
-
-export interface ChainResult {
-  chain: string;
-  date: string;
-  addresses: number;
-  score: number;
-}
-
-export interface TokenResult {
-  token: string;
-  date: string;
-  price: number;
-  score: number;
-}
-
-export interface QueryResults {
-  chain?: ChainResult[];
-  token: TokenResult[];
-}
+import { RecordMetadata, ScoredPineconeRecord } from "@pinecone-database/pinecone";
+import dotenv from 'dotenv';
+dotenv.config();
 
 export interface DuneMetadata extends RecordMetadata {
-  date: string;
-  chartTitle: string;
-  type: 'dune_metrics';
+  queryId: string;
   timestamp: string;
-  [key: string]: RecordMetadataValue;
+  type: 'dune_metrics';
+  [key: string]: string | number | boolean;
 }
 
-export type DunePineconeRecord = ScoredPineconeRecord<DuneMetadata>; 
 
+export type ChartMetadata = DuneMetadata;
+
+export interface DunePineconeRecord extends ScoredPineconeRecord<DuneMetadata> {
+  metadata: DuneMetadata;
+}
+
+export interface ChartQueryResult extends ScoredPineconeRecord<ChartMetadata> {
+  id: string;
+  values: number[];
+  score: number;
+  metadata: ChartMetadata;
+}
+
+export interface ChartFilter {
+  type: { $eq: 'dune_metrics' };
+  chartTitle?: { $eq: string };
+}
+
+
+export interface ChartContext {
+  title: string;
+  type: 'dune';
+} 
