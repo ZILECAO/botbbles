@@ -1,42 +1,50 @@
-import { Pinecone } from '@pinecone-database/pinecone';
+import { Pinecone, ScoredPineconeRecord, RecordMetadata } from '@pinecone-database/pinecone';
 import OpenAI from 'openai';
-import { DuneMetadata } from '../dunePlugin/types/metadata';
+import { DuneMetadata, ChartQueryResult } from '../dunePlugin/types/metadata';
 import dotenv from 'dotenv';
 dotenv.config();
 
 const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
-const INDEX_NAME = 'dune-queries';
+const INDEX_NAME = 'botbbles';
 const MAX_VECTOR_BATCH_SIZE = 100;
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY as string,
 });
 
-function sanitizeMetadata(obj: Record<string, any>): Record<string, any> {
-  const sanitized: Record<string, any> = {};
-  
-  for (const [key, value] of Object.entries(obj)) {
-    if (value === null || value === undefined) {
-      sanitized[key] = "0";
-    } else if (Array.isArray(value)) {
-      sanitized[key] = value.map(v => v?.toString() || "0");
-    } else if (typeof value === 'object') {
-      sanitized[key] = sanitizeMetadata(value);
-    } else {
-      sanitized[key] = value.toString();
-    }
-  }
-  
-  return sanitized;
+// Type guard function with correct parameter type
+function isDuneMetadata(match: ScoredPineconeRecord<RecordMetadata>): match is ChartQueryResult {
+  return match?.metadata?.type === 'dune_metrics' && 
+         'queryId' in (match?.metadata || {}) &&
+         typeof match?.id === 'string' &&
+         Array.isArray(match?.values);
 }
 
-export async function storeDuneData(rows: any[], chartTitle: string) {
+export async function storeDuneData(rows: any[], chartTitle: string, queryId: string) {
   if (!PINECONE_API_KEY) {
     throw new Error('Pinecone API key not configured');
   }
 
   const pc = new Pinecone({ apiKey: PINECONE_API_KEY });
   const index = pc.Index(INDEX_NAME);
+
+  // Check for existing data with the same queryId
+  const existingData = await index.query({
+    vector: new Array(3072).fill(0),
+    filter: {
+      type: { $eq: 'dune_metrics' },
+      queryId: { $eq: queryId }
+    },
+    topK: 1,
+    includeMetadata: true
+  });
+
+  const matches = existingData.matches.filter(isDuneMetadata);
+
+  if (matches.length > 0) {
+    console.log(`[Dune] Data for queryId ${queryId} already exists in Pinecone. Skipping upload.`);
+    return 0;
+  }
 
   let totalProcessed = 0;
   console.log(`[Dune] Total rows to process: ${rows.length}`);
@@ -60,13 +68,14 @@ export async function storeDuneData(rows: any[], chartTitle: string) {
 
     const embeddings = embeddingResponse.data.map(datum => datum.embedding);
     const vectors = embeddings.map((embedding, j) => ({
-      id: `${chartTitle}-${Date.now()}-${j}`,
+      id: `${queryId}-${Date.now()}-${j}`,
       values: embedding,
       metadata: {
         ...sanitizeMetadata(batch[j]),
+        queryId,
         chartTitle,
         timestamp: Date.now().toString(),
-        type: 'dune_metrics'
+        type: 'dune_metrics' as const
       },
     }));
 
@@ -82,6 +91,23 @@ export async function storeDuneData(rows: any[], chartTitle: string) {
   }
 
   return totalProcessed;
+}
+
+// Helper function to sanitize metadata
+function sanitizeMetadata(obj: Record<string, any>): Record<string, any> {
+  const sanitized: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === null || value === undefined) {
+      sanitized[key] = "0";
+    } else if (Array.isArray(value)) {
+      sanitized[key] = value.map(v => v?.toString() || "0");
+    } else if (typeof value === 'object') {
+      sanitized[key] = sanitizeMetadata(value);
+    } else {
+      sanitized[key] = value.toString();
+    }
+  }
+  return sanitized;
 }
 
 export async function queryDuneData(chartTitle: string) {
@@ -102,7 +128,7 @@ export async function queryDuneData(chartTitle: string) {
     includeMetadata: true
   });
 
-  return response.matches.filter((match): match is { metadata: DuneMetadata } => 
+  return response.matches.filter((match: any): match is { metadata: DuneMetadata } => 
     match.metadata !== undefined
   );
 }

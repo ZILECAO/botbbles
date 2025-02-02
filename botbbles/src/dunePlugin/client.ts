@@ -44,6 +44,10 @@ export async function getPineconeClient() {
 }
 
 export function extractQueryId(iframeUrl: string): string | null {
+  // Handle full URL format (dune.com/queries/123456/789012)
+  const fullMatch = iframeUrl.match(/dune\.com\/(queries|embeds)\/(\d+)\/(\d+)/);
+  if (fullMatch) return fullMatch[2]; // Return the query ID (first number)
+  
   // Handle embed URL format (dune.com/embeds/123456)
   const embedMatch = iframeUrl.match(/dune\.com\/embeds\/(\d+)/);
   if (embedMatch) return embedMatch[1];

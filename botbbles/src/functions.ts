@@ -7,6 +7,7 @@ import { getDuneClient, extractQueryId } from './dunePlugin/client';
 import { Pinecone } from '@pinecone-database/pinecone';
 import OpenAI from 'openai';
 import { sanitizeMetadata } from './dunePlugin/api/route';
+import axios from 'axios';
 
 const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
 const INDEX_NAME = 'botbbles';
@@ -86,18 +87,47 @@ export const searchBotbblesTweetsFunction = new GameFunction({
                 );
             }
 
-            // Check for Dune URL
-            const duneUrlMatch = args.query.match(/https:\/\/dune\.com\/(queries|embeds)\/\d+/);
-            if (duneUrlMatch) {
-                logger(`🐰 Found Dune chart mention: ${duneUrlMatch[0]}`);
-                return new ExecutableGameFunctionResponse(
-                    ExecutableGameFunctionStatus.Done,
-                    JSON.stringify({
-                        type: 'dune_analysis',
-                        url: duneUrlMatch[0],
-                        tweet: args.query
-                    })
-                );
+            // Find t.co URLs
+            logger(`🔍 Searching tweet text: ${args.query}`);
+            const tcoUrlMatch = args.query.match(/https:\/\/t\.co\/\w+/);
+            
+            if (tcoUrlMatch) {
+                logger(`🔗 Found t.co URL: ${tcoUrlMatch[0]}`);
+                try {
+                    // Follow the redirect without actually fetching the full response
+                    const response = await axios.head(tcoUrlMatch[0], {
+                        maxRedirects: 5,
+                        validateStatus: null
+                    });
+                    
+                    // Get the final URL after redirects
+                    const finalUrl = response.request?.res?.responseUrl || response.headers?.location;
+                    logger(`📍 Resolved URL: ${finalUrl}`);
+                    
+                    if (finalUrl) {
+                        // Now check if it's a Dune URL
+                        const duneUrlMatch = finalUrl.match(/https:\/\/dune\.com\/(queries|embeds)\/(\d+)\/(\d+)/);
+                        if (duneUrlMatch) {
+                            logger(`🐰 Found Dune chart mention: ${duneUrlMatch[0]}`);
+                            return new ExecutableGameFunctionResponse(
+                                ExecutableGameFunctionStatus.Done,
+                                JSON.stringify({
+                                    type: 'dune_analysis',
+                                    url: duneUrlMatch[0],
+                                    tweet: args.query
+                                })
+                            );
+                        } else {
+                            logger(`❌ Resolved URL is not a Dune chart: ${finalUrl}`);
+                        }
+                    } else {
+                        logger(`❌ Could not resolve final URL from t.co link`);
+                    }
+                } catch (error) {
+                    logger(`❌ Failed to resolve t.co URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                }
+            } else {
+                logger(`❌ No t.co URL found in tweet`);
             }
 
             return new ExecutableGameFunctionResponse(
@@ -105,6 +135,7 @@ export const searchBotbblesTweetsFunction = new GameFunction({
                 `Found mention: ${args.query}`
             );
         } catch (e) {
+            logger(`❌ Error processing tweet: ${e instanceof Error ? e.message : 'Unknown error'}`);
             return new ExecutableGameFunctionResponse(
                 ExecutableGameFunctionStatus.Failed,
                 "Failed to process mention"
