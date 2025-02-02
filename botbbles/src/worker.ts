@@ -18,8 +18,8 @@ export const helloWorker = new GameWorker({
 });
 
 export const postTweetWorker = new GameWorker({
-    id: "twitter_main_worker",
-    name: "Twitter main worker",
+    id: "post_tweet_worker",
+    name: "Post to Twitter worker",
     description: "Worker that posts tweets",
     functions: [searchBotbblesTweetsFunction, replyToTweetFunction, postTweetFunction],
     // Optional: Provide environment to LLP
@@ -30,10 +30,10 @@ export const postTweetWorker = new GameWorker({
     },
 });
 
-export const twitterWorker = new GameWorker({
-    id: "twitter_analysis_worker",
-    name: "Dune Chart Analyzer",
-    description: "A worker that monitors Twitter for Dune chart mentions and provides analysis",
+export const readTweetWorker = new GameWorker({
+    id: "read_tweet_worker",
+    name: "Read Tweet worker",
+    description: "A worker that reads tweets and looks for mentions of @Botbbles with a Dune Analytics chart URL. Returns the Query ID of the Dune Analytics chart.",
     functions: [
         searchBotbblesTweetsFunction,
         analyzeDuneChartFunction,
@@ -41,8 +41,20 @@ export const twitterWorker = new GameWorker({
     ],
     getEnvironment: async () => {
         return {
-            username: "@Botbbles",
-            search_query: "@Botbbles",
+            dune_query_id: 0, //TODO
+        };
+    },
+});
+
+export const duneRAGWorker = new GameWorker({
+    id: "dune_rag_worker",
+    name: "Dune RAG worker",
+    description: "A worker that first pulls Dune data given a Query ID, then upserts all the data in text-embedded chunks to Pinecone, then uses RAG to generate an analysis of the newly upserted data.",
+    functions: [],
+    getEnvironment: async () => {
+        return {
+            successful_pinecone_upserts: 0, // TODO
+            rag_response: "", // TODO
         };
     },
 });
@@ -50,7 +62,7 @@ export const twitterWorker = new GameWorker({
 export const fineTuneWorker = new GameWorker({
     id: "fine_tune_worker",
     name: "Fine Tuning Worker",
-    description: "Monitors performance and triggers fine-tuning for self-improvement",
+    description: "Monitors performance and triggers fine-tuning for self-improvement. The fine-tuning flow goes as follows: 1) worker runs the function to convert pinecone data to training examples 2) worker runs the function to remote fine-tune the model 3) worker returns status success or failure",
     functions: [],
     getEnvironment: async () => {
         const manager = new FineTuningManager();
