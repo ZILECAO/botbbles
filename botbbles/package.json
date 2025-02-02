@@ -10,7 +10,9 @@
     "dev": "ts-node src/index.ts",
     "watch": "tsc --watch",
     "test": "ts-node src/scripts/test.ts",
-    "setup": "pip3 install -r requirements.txt && npm install"
+    "setup": "pip3 install -r requirements.txt && npm install",
+    "sync-hyperbolic": "ts-node src/plugins/hyperbolicPlugin/syncToHyperbolic.ts",
+    "finetune-remote": "ts-node src/scripts/unsloth-finetune/runRemoteFinetune.ts "
   },
   "keywords": [],
   "author": "",

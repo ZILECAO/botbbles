@@ -1,7 +1,7 @@
 import { GameWorker } from "@virtuals-protocol/game";
 import { helloFunction, searchBotbblesTweetsFunction, replyToTweetFunction, postTweetFunction, analyzeDuneChartFunction } from "./functions";
 import { twitterPlugin } from "./plugins/twitterPlugin/twitterPlugin";
-import { FineTuningManager } from "./finetune/fineTune";
+import { FineTuningManager } from "./scripts/unsloth-finetune/fineTune";
 
 export const helloWorker = new GameWorker({
     id: "hello_worker",
@@ -64,12 +64,11 @@ export const fineTuneWorker = new GameWorker({
         if (await manager.shouldFineTune(storedEnv.performance_score)) {
             console.log("🔄 Initiating fine-tuning process...");
             try {
-                const metrics = await manager.runFineTuning();
+                const metrics = await manager.triggerFineTuningAfterUpsert();
                 
                 // Update stored environment with new metrics
                 storedEnv.last_fine_tune = Date.now();
                 storedEnv.fine_tune_count += 1;
-                storedEnv.performance_score = 1 - metrics.final_metrics.eval_loss;
                 
                 console.log("✅ Fine-tuning complete", metrics);
             } catch (error) {

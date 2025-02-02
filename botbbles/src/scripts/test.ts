@@ -4,8 +4,8 @@ import { getPineconeClient, getOpenAIClient } from '../plugins/pineconePlugin/pi
 import { processDuneBatchPineconeUpsert } from '../plugins/pineconePlugin/duneToPineconeUpsert';
 import { INDEX_NAME } from '../plugins/pineconePlugin/pineconePlugin';
 import path from 'path';
-import { prepareTrainingData } from '../finetune/prepareTrainingData';
-import { FineTuningManager } from '../finetune/fineTune';
+import { prepareTrainingData } from './unsloth-finetune/prepareTrainingData';
+import { FineTuningManager } from './unsloth-finetune/fineTune';
 
 // Load environment variables
 const envPath = path.resolve(process.cwd(), '.env');
@@ -17,7 +17,7 @@ async function testDuneAnalysis() {
         const duneClient = await getDuneClient();
 
         // Hardcoded test URL
-        const testUrl = "https://dune.com/queries/2684122/4463552";
+        const testUrl = "https://dune.com/queries/3343108/5601830";
 
         console.log('🔍 Testing Dune analysis with URL:', testUrl);
 
