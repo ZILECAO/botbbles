@@ -1,9 +1,11 @@
-import { getPineconeClient } from "../pinecone";
+
 import OpenAI from "openai";
 import { ChartContext } from "../../dunePlugin/types/metadata";
 import { ScoredPineconeRecord, RecordMetadata } from "@pinecone-database/pinecone";
 import { DuneMetadata } from "../../dunePlugin/types/metadata";
 import dotenv from 'dotenv';
+import { getPineconeClient } from "../../dunePlugin/client";
+
 dotenv.config();
 
 export const maxDuration = 180;
