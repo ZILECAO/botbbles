@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
 import { getDuneClient, extractQueryId } from '../client';
 import { Pinecone } from '@pinecone-database/pinecone';
 import OpenAI from 'openai';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
 const INDEX_NAME = 'botbbles';
@@ -11,7 +12,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY as string,
 });
 
-function sanitizeMetadata(obj: Record<string, any>): Record<string, any> {
+export function sanitizeMetadata(obj: Record<string, any>): Record<string, any> {
   const sanitized: Record<string, any> = {};
   
   for (const [key, value] of Object.entries(obj)) {
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
 
     const queryId = extractQueryId(iframeUrl);
     if (!queryId) {
-      return NextResponse.json({ error: 'Invalid Dune iframe URL' }, { status: 400 });
+      return Response.json({ error: 'Invalid Dune iframe URL' }, { status: 400 });
     }
 
     console.log(`[Dune] Processing query ID: ${queryId} for chart: ${chartTitle}`);
@@ -116,7 +117,7 @@ export async function POST(req: Request) {
     }
 
     console.log(`[Dune] Completed processing ${totalProcessed} rows for chart: ${chartTitle}`);
-    return NextResponse.json({ success: true });
+    return Response.json({ success: true });
   } catch (error) {
     console.error('[Dune] Query error:', {
       name: (error as Error).name,
@@ -125,7 +126,7 @@ export async function POST(req: Request) {
       error: error
     });
     
-    return NextResponse.json(
+    return Response.json(
       { 
         error: error instanceof Error ? error.message : 'Failed to execute query',
         details: error instanceof Error ? error.stack : undefined

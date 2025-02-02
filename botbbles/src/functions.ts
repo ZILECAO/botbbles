@@ -6,6 +6,7 @@ import {
 import { getDuneClient, extractQueryId } from './dunePlugin/client';
 import { Pinecone } from '@pinecone-database/pinecone';
 import OpenAI from 'openai';
+import { sanitizeMetadata } from './dunePlugin/api/route';
 
 const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
 const INDEX_NAME = 'botbbles';
@@ -150,7 +151,7 @@ export const analyzeDuneChartFunction = new GameFunction({
   ] as const,
   executable: async (args, logger) => {
     try {
-      const queryId = extractQueryId(args.url);
+      const queryId = extractQueryId(args.url as string);
       if (!queryId) {
         return new ExecutableGameFunctionResponse(
           ExecutableGameFunctionStatus.Failed,
@@ -209,7 +210,7 @@ export const analyzeDuneChartFunction = new GameFunction({
       const analysisPrompt = `Analyze the following Dune Analytics data and provide insights in a friendly, accessible way. Remember to maintain the persona of a data-loving bunny! 🐰\n\n${JSON.stringify(results.result.rows, null, 2)}`;
       
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4',
+        model: 'gpt-4o',
         messages: [
           { 
             role: "system", 

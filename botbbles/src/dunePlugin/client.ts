@@ -1,14 +1,23 @@
 import { DuneClient } from "@duneanalytics/client-sdk";
 import OpenAI from 'openai';
 import { Pinecone } from '@pinecone-database/pinecone';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const DUNE_API_KEY = process.env.DUNE_API_KEY;
 const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const INDEX_NAME = 'botbbles';
 
-if (!DUNE_API_KEY || !PINECONE_API_KEY || !OPENAI_API_KEY) {
-  throw new Error('Missing required API keys');
+// More detailed error checking
+const missingKeys = [];
+if (!DUNE_API_KEY) missingKeys.push('DUNE_API_KEY');
+if (!PINECONE_API_KEY) missingKeys.push('PINECONE_API_KEY');
+if (!OPENAI_API_KEY) missingKeys.push('OPENAI_API_KEY');
+
+if (missingKeys.length > 0) {
+    console.error('❌ Missing required API keys:', missingKeys.join(', '));
+    throw new Error(`Missing required API keys: ${missingKeys.join(', ')}`);
 }
 
 let duneInstance: DuneClient | null = null;

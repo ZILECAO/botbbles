@@ -1,8 +1,10 @@
-import { getPineconeClient } from "@/lib/pinecone/pinecone";
+import { getPineconeClient } from "../pinecone";
 import OpenAI from "openai";
-import { ChartContext } from "@/types/chat";
+import { ChartContext } from "../../dunePlugin/types/metadata";
 import { ScoredPineconeRecord, RecordMetadata } from "@pinecone-database/pinecone";
-import { DuneMetadata, AlliumMetadata, TokenPriceMetadata } from "@/types/metadata";
+import { DuneMetadata } from "../../dunePlugin/types/metadata";
+import dotenv from 'dotenv';
+dotenv.config();
 
 export const maxDuration = 180;
 export const runtime = 'edge';
@@ -26,7 +28,7 @@ Instructions:
 
 When showing numbers, use proper formatting with thousands separators.`;
 
-type ChartMetadata = DuneMetadata | AlliumMetadata | TokenPriceMetadata;
+type ChartMetadata = DuneMetadata;
 type PineconeResult = ScoredPineconeRecord<ChartMetadata>;
 
 interface ChartQueryResult extends PineconeResult {
@@ -35,7 +37,7 @@ interface ChartQueryResult extends PineconeResult {
 
 async function getChartContext(chartContexts: ChartContext[], embedding: number[]) {
   const client = await getPineconeClient();
-  const results: { [key: string]: PineconeResult[] } = {};
+  const results: { [key: string]: ChartQueryResult[] } = {};
 
   for (const ctx of chartContexts) {
     const index = client.Index(getIndexNameForType(ctx.type));
@@ -50,8 +52,11 @@ async function getChartContext(chartContexts: ChartContext[], embedding: number[
       }
     });
 
-    results[ctx.title] = response.matches.filter((match): match is PineconeResult => 
-      match.metadata !== undefined
+    results[ctx.title] = response.matches.filter((match): match is ChartQueryResult => 
+      match.metadata !== undefined && 
+      match.id !== undefined &&
+      match.values !== undefined &&
+      match.score !== undefined
     );
   }
 
