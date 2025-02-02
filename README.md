@@ -19,6 +19,7 @@ cd botbbles
 npm install
 npm run build
 npm run setup
+npm run dev
 ```
 
 .env file
