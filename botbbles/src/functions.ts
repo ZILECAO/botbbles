@@ -3,6 +3,16 @@ import {
     ExecutableGameFunctionResponse,
     ExecutableGameFunctionStatus,
 } from "@virtuals-protocol/game";
+import { getDuneClient, extractQueryId } from './dunePlugin/client';
+import { Pinecone } from '@pinecone-database/pinecone';
+import OpenAI from 'openai';
+
+const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
+const INDEX_NAME = 'botbbles';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY as string,
+});
 
 export const helloFunction = new GameFunction({
     name: "hello",
@@ -62,13 +72,12 @@ export const postTweetFunction = new GameFunction({
 
 export const searchBotbblesTweetsFunction = new GameFunction({
     name: "search_tweets",
-    description: "Search tweets mentioning Botbbles",
+    description: "Search tweets mentioning Botbbles and detect Dune URLs",
     args: [
         { name: "query", description: "The query to search for" },
     ] as const,
     executable: async (args, logger) => {
         try {
-            // Only proceed if the query contains @Botbbles
             if (!args.query?.includes("@Botbbles")) {
                 return new ExecutableGameFunctionResponse(
                     ExecutableGameFunctionStatus.Failed,
@@ -76,8 +85,20 @@ export const searchBotbblesTweetsFunction = new GameFunction({
                 );
             }
 
-            logger(`🐰 Found mention: ${args.query}`);
-            
+            // Check for Dune URL
+            const duneUrlMatch = args.query.match(/https:\/\/dune\.com\/(queries|embeds)\/\d+/);
+            if (duneUrlMatch) {
+                logger(`🐰 Found Dune chart mention: ${duneUrlMatch[0]}`);
+                return new ExecutableGameFunctionResponse(
+                    ExecutableGameFunctionStatus.Done,
+                    JSON.stringify({
+                        type: 'dune_analysis',
+                        url: duneUrlMatch[0],
+                        tweet: args.query
+                    })
+                );
+            }
+
             return new ExecutableGameFunctionResponse(
                 ExecutableGameFunctionStatus.Done,
                 `Found mention: ${args.query}`
@@ -85,7 +106,7 @@ export const searchBotbblesTweetsFunction = new GameFunction({
         } catch (e) {
             return new ExecutableGameFunctionResponse(
                 ExecutableGameFunctionStatus.Failed,
-                "Failed to log mention"
+                "Failed to process mention"
             );
         }
     },
@@ -118,4 +139,101 @@ export const replyToTweetFunction = new GameFunction({
             );
         }
     },
+});
+
+export const analyzeDuneChartFunction = new GameFunction({
+  name: "analyze_dune_chart",
+  description: "Analyze a Dune Analytics chart and provide insights",
+  args: [
+    { name: "url", description: "The Dune chart URL to analyze" },
+    { name: "tweet_id", description: "The tweet ID to reply to" }
+  ] as const,
+  executable: async (args, logger) => {
+    try {
+      const queryId = extractQueryId(args.url);
+      if (!queryId) {
+        return new ExecutableGameFunctionResponse(
+          ExecutableGameFunctionStatus.Failed,
+          "Invalid Dune URL format"
+        );
+      }
+
+      // Get Dune data
+      const client = await getDuneClient();
+      const results = await client.getLatestResult({ queryId: parseInt(queryId) });
+
+      if (!results?.result?.rows) {
+        return new ExecutableGameFunctionResponse(
+          ExecutableGameFunctionStatus.Failed,
+          "No data returned from Dune"
+        );
+      }
+
+      // Store in Pinecone
+      const pc = new Pinecone({ apiKey: PINECONE_API_KEY as string });
+      const index = pc.Index(INDEX_NAME);
+
+      // Process the data in batches
+      const batchSize = 100;
+      const rows = results.result.rows;
+      
+      for (let i = 0; i < rows.length; i += batchSize) {
+        const batch = rows.slice(i, i + batchSize);
+        const texts = batch.map(item => 
+          Object.entries(item)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join(', ')
+        );
+
+        const embeddingResponse = await openai.embeddings.create({
+          model: 'text-embedding-3-large',
+          input: texts,
+        });
+
+        const embeddings = embeddingResponse.data.map(datum => datum.embedding);
+        const vectors = embeddings.map((embedding, j) => ({
+          id: `chart-${queryId}-${Date.now()}-${j}`,
+          values: embedding,
+          metadata: {
+            ...sanitizeMetadata(batch[j]),
+            queryId,
+            timestamp: Date.now().toString(),
+            type: 'dune_metrics'
+          },
+        }));
+
+        await index.upsert(vectors);
+      }
+
+      // Generate analysis using RAG
+      const analysisPrompt = `Analyze the following Dune Analytics data and provide insights in a friendly, accessible way. Remember to maintain the persona of a data-loving bunny! 🐰\n\n${JSON.stringify(results.result.rows, null, 2)}`;
+      
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          { 
+            role: "system", 
+            content: "You are Botbbles, a data-loving bunny who explains blockchain analytics in a friendly way. Use bunny puns and emojis 🐰 while maintaining analytical accuracy."
+          },
+          { role: "user", content: analysisPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 280 // Twitter limit
+      });
+
+      const analysis = completion.choices[0].message.content;
+
+      // Reply to the tweet with the analysis
+      return new ExecutableGameFunctionResponse(
+        ExecutableGameFunctionStatus.Done,
+        JSON.stringify({ analysis, tweet_id: args.tweet_id })
+      );
+    } catch (error) {
+      console.error('Analysis error:', error);
+      return new ExecutableGameFunctionResponse(
+        ExecutableGameFunctionStatus.Failed,
+        error instanceof Error ? error.message : "Failed to analyze chart"
+      );
+    }
+  },
 });

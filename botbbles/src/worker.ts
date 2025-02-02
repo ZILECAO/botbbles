@@ -1,6 +1,6 @@
 import { GameWorker } from "@virtuals-protocol/game";
-import { helloFunction, searchBotbblesTweetsFunction, replyToTweetFunction, postTweetFunction } from "./functions";
-import { twitterPlugin } from "./plugins/twitterPlugin";
+import { helloFunction, searchBotbblesTweetsFunction, replyToTweetFunction, postTweetFunction, analyzeDuneChartFunction } from "./functions";
+import { twitterPlugin } from "./twitterPlugin/twitterPlugin";
 
 export const helloWorker = new GameWorker({
     id: "hello_worker",
@@ -34,16 +34,14 @@ export const twitterWorker = new GameWorker({
     name: "Dune Chart Analyzer",
     description: "A worker that monitors Twitter for Dune chart mentions and provides analysis",
     functions: [
-        // twitterPlugin.searchTweetsFunction,
-        // twitterPlugin.replyTweetFunction,
-        searchBotbblesTweetsFunction, // Only using search for now
+        searchBotbblesTweetsFunction,
+        analyzeDuneChartFunction,
+        replyToTweetFunction
     ],
     getEnvironment: async () => {
         return {
             username: "@Botbbles",
-            // charts_analyzed_today: 0,
-            // max_daily_analyses: 50,
-            search_query: "@Botbbles", // Just looking for mentions
+            search_query: "@Botbbles",
         };
     },
 });
