@@ -1,27 +1,14 @@
 import { GameWorker } from "@virtuals-protocol/game";
-import { helloFunction, searchBotbblesTweetsFunction, replyToTweetFunction, postTweetFunction, analyzeDuneChartFunction } from "./functions";
+import { searchBotbblesTweetsAndExtractDuneQueryIdFunction, replyToTweetFunction, postTweetFunction, upsertDuneToPineconeFunction } from "./functions";
 import { twitterPlugin } from "./plugins/twitterPlugin/twitterPlugin";
 import { FineTuningManager } from "./scripts/unsloth-finetune/fineTune";
 
-export const helloWorker = new GameWorker({
-    id: "hello_worker",
-    name: "hello worker",
-    description: "has the ability to say hello",
-    functions: [helloFunction],
-    getEnvironment: async () => {
-        return {
-            status: 'friendly',
-            // Add any environment variables your worker needs
-            someLimit: 10,
-        };
-    },
-});
-
+// TODO: Implement post tweet worker
 export const postTweetWorker = new GameWorker({
     id: "post_tweet_worker",
-    name: "Post to Twitter worker",
-    description: "Worker that posts tweets",
-    functions: [searchBotbblesTweetsFunction, replyToTweetFunction, postTweetFunction],
+    name: "Twitter worker that has write permissions",
+    description: "Worker that can write new tweets and replies to tweets",
+    functions: [replyToTweetFunction, postTweetFunction],
     // Optional: Provide environment to LLP
     getEnvironment: async () => {
         return {
@@ -30,14 +17,13 @@ export const postTweetWorker = new GameWorker({
     },
 });
 
+// TODO: Implement read tweet worker
 export const readTweetWorker = new GameWorker({
     id: "read_tweet_worker",
     name: "Read Tweet worker",
     description: "A worker that reads tweets and looks for mentions of @Botbbles with a Dune Analytics chart URL. Returns the Query ID of the Dune Analytics chart.",
     functions: [
-        searchBotbblesTweetsFunction,
-        analyzeDuneChartFunction,
-        replyToTweetFunction
+        searchBotbblesTweetsAndExtractDuneQueryIdFunction
     ],
     getEnvironment: async () => {
         return {
@@ -46,11 +32,12 @@ export const readTweetWorker = new GameWorker({
     },
 });
 
+// TODO: Implement Dune RAG worker
 export const duneRAGWorker = new GameWorker({
     id: "dune_rag_worker",
     name: "Dune RAG worker",
     description: "A worker that first pulls Dune data given a Query ID, then upserts all the data in text-embedded chunks to Pinecone, then uses RAG to generate an analysis of the newly upserted data.",
-    functions: [],
+    functions: [upsertDuneToPineconeFunction],
     getEnvironment: async () => {
         return {
             successful_pinecone_upserts: 0, // TODO
@@ -59,11 +46,12 @@ export const duneRAGWorker = new GameWorker({
     },
 });
 
+// TODO: Implement fine-tuning worker
 export const fineTuneWorker = new GameWorker({
     id: "fine_tune_worker",
     name: "Fine Tuning Worker",
     description: "Monitors performance and triggers fine-tuning for self-improvement. The fine-tuning flow goes as follows: 1) worker runs the function to convert pinecone data to training examples 2) worker runs the function to remote fine-tune the model 3) worker returns status success or failure",
-    functions: [],
+    functions: [], // TODO: Implement fine-tuning function
     getEnvironment: async () => {
         const manager = new FineTuningManager();
         const storedEnv = {
