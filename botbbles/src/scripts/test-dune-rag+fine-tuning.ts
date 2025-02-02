@@ -1,11 +1,11 @@
 import { getDuneClient, extractQueryId } from '../plugins/dunePlugin/dunePlugin';
-import { hyperbolicRAGChatCompletion } from '../plugins/hyperbolicPlugin/hyperbolicPlugin';
+import { hyperbolicChatCompletion, hyperbolicRAGChatCompletion } from '../plugins/hyperbolicPlugin/hyperbolicPlugin';
 import { getPineconeClient, getOpenAIClient } from '../plugins/pineconePlugin/pineconePlugin';
 import { processDuneBatchPineconeUpsert } from '../plugins/pineconePlugin/duneToPineconeUpsert';
 import { INDEX_NAME } from '../plugins/pineconePlugin/pineconePlugin';
 import path from 'path';
-import { prepareTrainingData } from '../finetune/prepareTrainingData';
-import { FineTuningManager } from '../finetune/fineTune';
+import { prepareTrainingData } from './unsloth-finetune/prepareTrainingData';
+import { FineTuningManager } from './unsloth-finetune/fineTune';
 
 // Load environment variables
 const envPath = path.resolve(process.cwd(), '.env');
@@ -17,7 +17,7 @@ async function testDuneAnalysis() {
         const duneClient = await getDuneClient();
 
         // Hardcoded test URL
-        const testUrl = "https://dune.com/queries/2684122/4463552";
+        const testUrl = "https://dune.com/queries/3723737/6263586";
 
         console.log('🔍 Testing Dune analysis with URL:', testUrl);
 
@@ -58,20 +58,6 @@ async function testDuneAnalysis() {
         );
         console.log(`📈 Stored ${totalProcessed} rows in Pinecone`);
 
-        // After successful Pinecone upsert
-        console.log('🎯 Preparing training data for fine-tuning...');
-        await prepareTrainingData(); 
-
-        // Trigger fine-tuning
-        const fineTuningManager = new FineTuningManager();
-        
-        try {
-            const metrics = await fineTuningManager.triggerFineTuningAfterUpsert();;
-            console.log('✨ Fine-tuning complete with metrics:', metrics);
-        } catch (error) {
-            console.error('❌ Fine-tuning failed:', error);
-        }
-
         // Generate analysis using RAG
         console.log('🤖 Generating analysis...');
         const analysisPrompt = `Analyze the following analytics data from the Dune query titled "${queryMetadata.name}".
@@ -81,9 +67,25 @@ async function testDuneAnalysis() {
             Data:
             ${JSON.stringify(results.result.rows, null, 2)}`;
 
+        const nonRAGresponse = await hyperbolicChatCompletion(analysisPrompt);
         const RAGresponse = await hyperbolicRAGChatCompletion(analysisPrompt);
 
-        console.log('\n🐰 Botbbles Analysis:', RAGresponse);
+        console.log('\n🐰 Botbbles Analysis (Non-RAG):', nonRAGresponse);
+        console.log('\n🐰 Botbbles Analysis (RAG):', RAGresponse);
+
+        // After successful Pinecone upsert & RAG generation, prepare training data for fine-tuning
+        console.log('🎯 Preparing training data for fine-tuning...');
+        await prepareTrainingData(); 
+
+        // Trigger fine-tuning: IMPORTANT
+        const fineTuningManager = new FineTuningManager();
+        
+        try {
+            const metrics = await fineTuningManager.triggerFineTuningAfterUpsert();;
+            console.log('✨ Fine-tuning complete with metrics:', metrics);
+        } catch (error) {
+            console.error('❌ Fine-tuning failed:', error);
+        }
 
     } catch (error) {
         console.error('❌ Error:', error instanceof Error ? error.message : 'Unknown error');
