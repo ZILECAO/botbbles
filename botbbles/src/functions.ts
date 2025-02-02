@@ -8,6 +8,7 @@ import { processDuneBatchPineconeUpsert } from './plugins/pineconePlugin/duneToP
 import { getOpenAIClient, getPineconeClient } from "./plugins/pineconePlugin/pineconePlugin";
 import fetch from 'node-fetch';
 import { FineTuningManager } from "./scripts/unsloth-finetune/fineTune";
+import { twitterPlugin } from "./plugins/twitterPlugin/twitterPlugin";
 
 const INDEX_NAME = 'botbbles';
 
@@ -21,7 +22,7 @@ async function getRedirectLocation(url: string): Promise<string | null> {
     }
 }
 
-export const searchBotbblesTweetsAndExtractDuneQueryIdFunction = new GameFunction({
+export const searchBotbblesTweetsAndExtractDuneQueryIdFunction  = new GameFunction({
     name: "search_tweets_and_extract_dune_query_id",
     description: "Search tweets mentioning Botbbles and detect URLs",
     args: [
@@ -39,12 +40,12 @@ export const searchBotbblesTweetsAndExtractDuneQueryIdFunction = new GameFunctio
 
             // Find t.co URLs
             logger?.(`🔍 Searching tweet text: ${args.tweet_text}`);
-            const tcoUrlMatch = args.tweet_text?.match(/https:\/\/t\.co\/\w+/);
+            const urlMatch = args.tweet_text?.match(/https?:\/\/[^\s]+/g);
             
-            if (tcoUrlMatch) {
-                logger?.(`🔗 Found t.co URL: ${tcoUrlMatch[0]}`);
+            if (urlMatch) {
+                logger?.(`🔗 Found URL: ${urlMatch[0]}`);
                 try {
-                    const finalUrl = await getRedirectLocation(tcoUrlMatch[0]);
+                    const finalUrl = await getRedirectLocation(urlMatch[0]);
                     
                     if (finalUrl) {
                         logger?.(`📍 Resolved URL: ${finalUrl}`);
@@ -176,7 +177,7 @@ export const replyToTweetFunction = new GameFunction({
             logger(`Replying to tweet ${tweetId}`);
             logger(`Replying with ${reply}`);
 
-            await this.twitterClient.v2.reply(args.reply, args.tweet_id);
+            // await this.twitterClient.v2.reply(args.reply, args.tweet_id);
 
             return new ExecutableGameFunctionResponse(
                 ExecutableGameFunctionStatus.Done,
@@ -212,7 +213,7 @@ export const postTweetFunction = new GameFunction({
 
             logger(`Posting tweet: ${args.tweet}`);
 
-            await this.twitterClient.v2.tweet(args.tweet);
+            // await this.twitterClient.v2.tweet(args.tweet);
 
             return new ExecutableGameFunctionResponse(
                 ExecutableGameFunctionStatus.Done,
