@@ -1,7 +1,7 @@
 import { getDuneClient, extractQueryId } from '../plugins/dunePlugin/dunePlugin';
 import { hyperbolicRAGChatCompletion } from '../plugins/hyperbolicPlugin/hyperbolicPlugin';
 import { getPineconeClient, getOpenAIClient } from '../plugins/pineconePlugin/pineconePlugin';
-import { processDuneBatch } from '../plugins/dunePlugin/duneRAG';
+import { processDuneBatchPineconeUpsert } from '../plugins/pineconePlugin/duneToPineconeUpsert';
 import { INDEX_NAME } from '../plugins/pineconePlugin/pineconePlugin';
 import path from 'path';
 
@@ -48,7 +48,7 @@ async function testDuneAnalysis() {
         const index = pc.Index(INDEX_NAME);
 
         // Process the data in batches
-        const totalProcessed = await processDuneBatch(
+        const totalProcessed = await processDuneBatchPineconeUpsert(
             results.result.rows,
             queryId,
             queryMetadata.name,

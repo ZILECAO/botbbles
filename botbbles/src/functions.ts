@@ -4,7 +4,7 @@ import {
     ExecutableGameFunctionStatus,
 } from "@virtuals-protocol/game";
 import { getDuneClient, extractQueryId } from './plugins/dunePlugin/dunePlugin';
-import { processDuneBatch } from './plugins/dunePlugin/duneRAG';
+import { processDuneBatchPineconeUpsert } from './plugins/pineconePlugin/duneToPineconeUpsert';
 import { Pinecone } from '@pinecone-database/pinecone';
 import OpenAI from 'openai';
 import { sanitizeMetadata } from './plugins/dunePlugin/dunePlugin';
@@ -207,7 +207,7 @@ export const analyzeDuneChartFunction = new GameFunction({
       const index = pc.Index(INDEX_NAME);
 
       // Process the data in batches
-      const totalProcessed = await processDuneBatch(results.result.rows, queryId);
+      const totalProcessed = await processDuneBatchPineconeUpsert(results.result.rows, queryId);
       console.log(`📈 Stored ${totalProcessed} rows in Pinecone`);
 
       // Generate analysis using RAG
